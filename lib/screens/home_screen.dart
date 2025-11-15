@@ -184,8 +184,8 @@ class PokemonCard extends StatelessWidget {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                getTypeColor(pokemon.types.first).withOpacity(0.1),
-                getTypeColor(pokemon.types.first).withOpacity(0.2),
+                getTypeColor(pokemon.types.first).withAlpha((0.1 * 255).round()),
+                getTypeColor(pokemon.types.first).withAlpha((0.2 * 255).round()),
               ],
             ),
           ),
@@ -232,7 +232,8 @@ class PokemonCard extends StatelessWidget {
                 children: pokemon.types.map((type) {
                   return Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
+                    decoration: BoxDecoration( 
+                      
                       color: getTypeColor(type),
                       borderRadius: BorderRadius.circular(12),
                     ),
