@@ -212,135 +212,206 @@ class _DetailScreenState extends State<DetailScreen> {
                     ],
                   ),
                 ),
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const SizedBox(height: 40),
-                      currentPokemon.imageUrl.isNotEmpty
-                          ? Image.network(
-                              currentPokemon.imageUrl,
-                              height: 200,
-                              fit: BoxFit.contain,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Icon(
-                                  Icons.catching_pokemon,
-                                  size: 120,
-                                  color: Colors.white.withAlpha((0.8 * 255).round()),
-                                );
-                                      primaryColor.withAlpha((0.7 * 255).round()),
-                            )
-                          : Icon(
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                  child: Row(
-                                    children: [
-                                      // Imagem do Pokémon
-                                      Expanded(
-                                        flex: 1,
-                                        child: Column(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-                                            const SizedBox(height: 8),
-                                            currentPokemon.imageUrl.isNotEmpty
-                                                ? Image.network(
-                                                    currentPokemon.imageUrl,
-                                                    height: 160,
-                                                    fit: BoxFit.contain,
-                                                    errorBuilder: (context, error, stackTrace) {
-                                                      return Icon(
-                                                        Icons.catching_pokemon,
-                                                        size: 120,
-                                                        color: Colors.white.withAlpha((0.8 * 255).round()),
-                                                      );
-                                                    },
-                                                  )
-                                                : Icon(
-                                                    Icons.catching_pokemon,
-                                                    size: 120,
-                                                    color: Colors.white.withAlpha((0.8 * 255).round()),
-                                                  ),
-                                            const SizedBox(height: 8),
-                                            Text(
-                                              currentPokemon.formattedId,
-                                              style: const TextStyle(
-                                                fontSize: 18,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.white70,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isWide = constraints.maxWidth > 600;
+                    if (isWide) {
+                      return Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const SizedBox(width: 24),
+                          // Left: imagem do Pokémon
+                          Expanded(
+                            flex: 3,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const SizedBox(height: 24),
+                                currentPokemon.imageUrl.isNotEmpty
+                                    ? Image.network(
+                                        currentPokemon.imageUrl,
+                                        height: 200,
+                                        fit: BoxFit.contain,
+                                        errorBuilder: (context, error, stackTrace) {
+                                          return Icon(
+                                            Icons.catching_pokemon,
+                                            size: 120,
+                                            color: Colors.white.withAlpha((0.8 * 255).round()),
+                                          );
+                                        },
+                                      )
+                                    : Icon(
+                                        Icons.catching_pokemon,
+                                        size: 120,
+                                        color: Colors.white.withAlpha((0.8 * 255).round()),
                                       ),
-
-                                      const SizedBox(width: 12),
-
-                                      // Evoluções ao lado da imagem
-                                      Expanded(
-                                        flex: 1,
-                                        child: Column(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            const Text(
-                                              'Evoluções',
-                                              style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 16),
-                                            ),
-                                            const SizedBox(height: 8),
-                                            if (isLoadingEvolutions)
-                                              const SizedBox(
-                                                width: 24,
-                                                height: 24,
-                                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                                              )
-                                            else if (evolutions.isEmpty)
-                                              Text('Nenhuma evolução', style: TextStyle(color: Colors.white.withAlpha((0.9 * 255).round())))
-                                            else
-                                              SizedBox(
-                                                height: 140,
-                                                child: ListView.builder(
-                                                  scrollDirection: Axis.horizontal,
-                                                  itemCount: evolutions.length,
-                                                  itemBuilder: (context, index) {
-                                                    final evo = evolutions[index];
-                                                    return GestureDetector(
-                                                      onTap: () => navigateToPokemon(evo.id),
-                                                      child: Container(
-                                                        width: 110,
-                                                        margin: const EdgeInsets.only(right: 12),
-                                                        child: Column(
-                                                          mainAxisAlignment: MainAxisAlignment.center,
-                                                          children: [
-                                                            Expanded(
-                                                              child: Image.network(
-                                                                evo.imageUrl,
-                                                                fit: BoxFit.contain,
-                                                                errorBuilder: (context, error, stackTrace) => Icon(
-                                                                  Icons.catching_pokemon,
-                                                                  size: 56,
-                                                                  color: Colors.white.withAlpha((0.9 * 255).round()),
-                                                                ),
-                                                              ),
-                                                            ),
-                                                            const SizedBox(height: 6),
-                                                            Text(
-                                                              evo.formattedName,
-                                                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                                                              textAlign: TextAlign.center,
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ),
-                                                    );
-                                                  },
-                                                ),
-                                              ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
+                                const SizedBox(height: 12),
+                                Text(
+                                  currentPokemon.formattedId,
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white70,
                                   ),
                                 ),
+                              ],
+                            ),
+                          ),
+
+                          // Right: Evoluções
+                          Expanded(
+                            flex: 2,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                const Text(
+                                  'Evoluções',
+                                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 8),
+                                if (evolutions.isEmpty) ...[
+                                  const Text('Sem evoluções visíveis', style: TextStyle(color: Colors.white70)),
+                                ] else ...[
+                                  SizedBox(
+                                    height: 180,
+                                    child: ListView.builder(
+                                      scrollDirection: Axis.vertical,
+                                      itemCount: evolutions.length,
+                                      itemBuilder: (context, index) {
+                                        final evo = evolutions[index];
+                                        return GestureDetector(
+                                          onTap: () => navigateToPokemon(evo.id),
+                                          child: Padding(
+                                            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+                                            child: Row(
+                                              children: [
+                                                SizedBox(
+                                                  width: 64,
+                                                  height: 64,
+                                                  child: Image.network(
+                                                    evo.imageUrl,
+                                                    fit: BoxFit.contain,
+                                                    errorBuilder: (c, e, s) => Icon(Icons.catching_pokemon, color: Colors.white.withAlpha((0.9 * 255).round())),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Expanded(
+                                                  child: Column(
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                      Text(evo.formattedName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                                      const SizedBox(height: 4),
+                                                      Text(evo.formattedId, style: TextStyle(color: Colors.white70, fontSize: 12)),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 24),
+                        ],
+                      );
+                    }
+
+                    // Narrow layout: keep image centered and evolutions below
+                    return Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const SizedBox(height: 24),
+                        currentPokemon.imageUrl.isNotEmpty
+                            ? Image.network(
+                                currentPokemon.imageUrl,
+                                height: 180,
+                                fit: BoxFit.contain,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Icon(
+                                    Icons.catching_pokemon,
+                                    size: 120,
+                                    color: Colors.white.withAlpha((0.8 * 255).round()),
+                                  );
+                                },
+                              )
+                            : Icon(
+                                Icons.catching_pokemon,
+                                size: 120,
+                                color: Colors.white.withAlpha((0.8 * 255).round()),
+                              ),
+                        const SizedBox(height: 12),
+                        Text(
+                          currentPokemon.formattedId,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white70,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        if (evolutions.isNotEmpty) ...[
+                          const Text('Evoluções', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            height: 100,
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: evolutions.length,
+                              itemBuilder: (context, index) {
+                                final evo = evolutions[index];
+                                return GestureDetector(
+                                  onTap: () => navigateToPokemon(evo.id),
+                                  child: Container(
+                                    width: 100,
+                                    margin: const EdgeInsets.only(right: 8),
+                                    child: Column(
+                                      children: [
+                                        Expanded(
+                                          child: Image.network(
+                                            evo.imageUrl,
+                                            fit: BoxFit.contain,
+                                            errorBuilder: (c, e, s) => Icon(Icons.catching_pokemon, color: Colors.white.withAlpha((0.9 * 255).round())),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(evo.formattedName, style: const TextStyle(color: Colors.white, fontSize: 12), textAlign: TextAlign.center),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Tipos
+                  const Text(
+                    'Tipos',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
                     spacing: 8,
                     children: currentPokemon.types.map((type) {
                       return Container(
@@ -701,112 +772,7 @@ class _DetailScreenState extends State<DetailScreen> {
                     );
                   }),
                   
-                  // Evoluções
-                  if (evolutions.isNotEmpty) ...[
-                    const SizedBox(height: 24),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Evoluções',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        if (isLoadingEvolutions)
-                          const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      height: 200,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: evolutions.length,
-                        itemBuilder: (context, index) {
-                          final evolution = evolutions[index];
-                          return GestureDetector(
-                            onTap: () => navigateToPokemon(evolution.id),
-                            child: Container(
-                              width: 150,
-                              margin: const EdgeInsets.only(right: 12),
-                              child: Card(
-                                elevation: 4,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(12),
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        evolution.formattedId,
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.grey[600],
-                                        ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Expanded(
-                                      child: Image.network(
-                                        evolution.imageUrl,
-                                        fit: BoxFit.contain,
-                                        errorBuilder: (context, error, stackTrace) {
-                                          return Icon(
-                                            Icons.catching_pokemon,
-                                            size: 64,
-                                            color: primaryColor,
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      evolution.formattedName,
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                    if (evolution.minLevel != null) ...[
-                                      const SizedBox(height: 4),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 2,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: primaryColor,
-                                          borderRadius: BorderRadius.circular(10),
-                                        ),
-                                        child: Text(
-                                          'Nível ${evolution.minLevel}',
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                        },
-                      ),
-                    ),
-                  ],
+                  
                 ],
               ),
             ),
