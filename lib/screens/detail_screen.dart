@@ -16,6 +16,8 @@ class _DetailScreenState extends State<DetailScreen> {
   List<PokemonEvolution> evolutions = [];
   Map<String, dynamic>? speciesInfo;
   bool isLoadingEvolutions = true;
+  bool _showAllMoves = false;
+  final int _movesPreviewLimit = 20;
 
   @override
   void initState() {
@@ -34,11 +36,17 @@ class _DetailScreenState extends State<DetailScreen> {
     if (pokemon != null) {
       setState(() {
         currentPokemon = pokemon;
-        evolutions = pokemon.evolutions;
+        // mostrar toda a cadeia menos o próprio Pokémon (evita auto-navegação)
+        evolutions = pokemon.evolutions.where((e) => e.id != pokemon.id).toList();
         speciesInfo = species;
         isLoadingEvolutions = false;
       });
+
     }
+      debugPrint('DEBUG: Pokemon ${currentPokemon.name} abilities count=${currentPokemon.abilities.length}');
+      debugPrint('DEBUG: abilities=${currentPokemon.abilities}');
+      debugPrint('DEBUG: evolutions count=${evolutions.length}');
+      debugPrint('DEBUG: evolutions=${evolutions.map((e) => e.name).toList()}');
   }
 
   Future<void> navigateToPokemon(int pokemonId) async {
@@ -200,7 +208,7 @@ class _DetailScreenState extends State<DetailScreen> {
                     end: Alignment.bottomCenter,
                     colors: [
                       primaryColor,
-                      primaryColor.withOpacity(0.7),
+                      primaryColor.withAlpha((0.7 * 255).round()),
                     ],
                   ),
                 ),
@@ -218,46 +226,121 @@ class _DetailScreenState extends State<DetailScreen> {
                                 return Icon(
                                   Icons.catching_pokemon,
                                   size: 120,
-                                  color: Colors.white.withOpacity(0.8),
+                                  color: Colors.white.withAlpha((0.8 * 255).round()),
                                 );
-                              },
+                                      primaryColor.withAlpha((0.7 * 255).round()),
                             )
                           : Icon(
-                              Icons.catching_pokemon,
-                              size: 120,
-                              color: Colors.white.withOpacity(0.8),
-                            ),
-                      const SizedBox(height: 16),
-                      Text(
-                        currentPokemon.formattedId,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white70,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Tipos
-                  const Text(
-                    'Tipos',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  child: Row(
+                                    children: [
+                                      // Imagem do Pokémon
+                                      Expanded(
+                                        flex: 1,
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            const SizedBox(height: 8),
+                                            currentPokemon.imageUrl.isNotEmpty
+                                                ? Image.network(
+                                                    currentPokemon.imageUrl,
+                                                    height: 160,
+                                                    fit: BoxFit.contain,
+                                                    errorBuilder: (context, error, stackTrace) {
+                                                      return Icon(
+                                                        Icons.catching_pokemon,
+                                                        size: 120,
+                                                        color: Colors.white.withAlpha((0.8 * 255).round()),
+                                                      );
+                                                    },
+                                                  )
+                                                : Icon(
+                                                    Icons.catching_pokemon,
+                                                    size: 120,
+                                                    color: Colors.white.withAlpha((0.8 * 255).round()),
+                                                  ),
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              currentPokemon.formattedId,
+                                              style: const TextStyle(
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.white70,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+
+                                      const SizedBox(width: 12),
+
+                                      // Evoluções ao lado da imagem
+                                      Expanded(
+                                        flex: 1,
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            const Text(
+                                              'Evoluções',
+                                              style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 16),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            if (isLoadingEvolutions)
+                                              const SizedBox(
+                                                width: 24,
+                                                height: 24,
+                                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                              )
+                                            else if (evolutions.isEmpty)
+                                              Text('Nenhuma evolução', style: TextStyle(color: Colors.white.withAlpha((0.9 * 255).round())))
+                                            else
+                                              SizedBox(
+                                                height: 140,
+                                                child: ListView.builder(
+                                                  scrollDirection: Axis.horizontal,
+                                                  itemCount: evolutions.length,
+                                                  itemBuilder: (context, index) {
+                                                    final evo = evolutions[index];
+                                                    return GestureDetector(
+                                                      onTap: () => navigateToPokemon(evo.id),
+                                                      child: Container(
+                                                        width: 110,
+                                                        margin: const EdgeInsets.only(right: 12),
+                                                        child: Column(
+                                                          mainAxisAlignment: MainAxisAlignment.center,
+                                                          children: [
+                                                            Expanded(
+                                                              child: Image.network(
+                                                                evo.imageUrl,
+                                                                fit: BoxFit.contain,
+                                                                errorBuilder: (context, error, stackTrace) => Icon(
+                                                                  Icons.catching_pokemon,
+                                                                  size: 56,
+                                                                  color: Colors.white.withAlpha((0.9 * 255).round()),
+                                                                ),
+                                                              ),
+                                                            ),
+                                                            const SizedBox(height: 6),
+                                                            Text(
+                                                              evo.formattedName,
+                                                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                                              textAlign: TextAlign.center,
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    );
+                                                  },
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                     spacing: 8,
                     children: currentPokemon.types.map((type) {
                       return Container(
@@ -354,52 +437,176 @@ class _DetailScreenState extends State<DetailScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  // Estatísticas
-                  const Text(
-                    'Estatísticas Base',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Estatísticas Base',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            ...currentPokemon.stats.map((stat) {
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 4),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          stat.formattedName,
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        Text(
+                                          stat.baseStat.toString(),
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    LinearProgressIndicator(
+                                      value: stat.baseStat / 255,
+                                      backgroundColor: Colors.grey[300],
+                                      valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+                                      minHeight: 8,
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Informações Adicionais',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Card(
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        const Text(
+                                          'Experiência Base:',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        Text(
+                                          '${currentPokemon.baseExperience} XP',
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    if (speciesInfo != null) ...[
+                                      const Divider(height: 24),
+                                      _buildInfoRow('Taxa de Captura:', '${speciesInfo!['capture_rate']}/255'),
+                                      const SizedBox(height: 8),
+                                      _buildInfoRow('Felicidade Base:', '${speciesInfo!['base_happiness']}/255'),
+                                      const SizedBox(height: 8),
+                                      _buildInfoRow('Crescimento:', _formatGrowthRate(speciesInfo!['growth_rate'])),
+                                      const SizedBox(height: 8),
+                                      _buildInfoRow('Habitat:', _capitalizeFirst(speciesInfo!['habitat'])),
+                                      const SizedBox(height: 8),
+                                      _buildInfoRow('Gênero:', speciesInfo!['gender_rate']),
+                                      const SizedBox(height: 8),
+                                      _buildInfoRow('Geração:', _capitalizeFirst(speciesInfo!['generation']).replaceAll('-', ' ')),
+                                      if (speciesInfo!['is_legendary'] == true || speciesInfo!['is_mythical'] == true) ...[
+                                        const SizedBox(height: 8),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                                          decoration: BoxDecoration(
+                                            color: Colors.amber.withAlpha((0.2 * 255).round()),
+                                            border: Border.all(color: Colors.amber),
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              const Icon(Icons.star, color: Colors.amber, size: 20),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                speciesInfo!['is_legendary'] == true ? 'LENDÁRIO' : 'MÍTICO',
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.amber,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                      // descrição removida daqui para exibir em largura total abaixo
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 12),
-                  ...currentPokemon.stats.map((stat) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                stat.formattedName,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              Text(
-                                stat.baseStat.toString(),
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          LinearProgressIndicator(
-                            value: stat.baseStat / 255,
-                            backgroundColor: Colors.grey[300],
-                            valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
-                            minHeight: 8,
-                          ),
-                        ],
+
+                  // Descrição (largura total) com visual mais moderno
+                  if (speciesInfo != null && speciesInfo!['description'] != null && speciesInfo!['description'].toString().isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    Card(
+                      elevation: 4,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      margin: EdgeInsets.zero,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Descrição',
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              speciesInfo!['description'],
+                              style: const TextStyle(fontSize: 14, height: 1.4),
+                              textAlign: TextAlign.justify,
+                            ),
+                          ],
+                        ),
                       ),
-                    );
-                  }).toList(),
-                  const SizedBox(height: 24),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
 
                   // Habilidades
                   const Text(
@@ -410,124 +617,89 @@ class _DetailScreenState extends State<DetailScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
+
                   Wrap(
                     spacing: 8,
                     children: currentPokemon.abilities.map((ability) {
-                      return Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: primaryColor.withOpacity(0.1),
-                          border: Border.all(color: primaryColor),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          ability.replaceAll('-', ' ').toUpperCase(),
-                          style: TextStyle(
-                            color: primaryColor,
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                      return ActionChip(
+                        label: Text(ability.replaceAll('-', ' ').toUpperCase()),
+                        backgroundColor: primaryColor.withAlpha((0.12 * 255).round()),
+                        labelStyle: TextStyle(color: primaryColor, fontWeight: FontWeight.bold),
+                        onPressed: () async {
+                          // Captura o contexto antes do await para evitar o lint
+                          final localContext = context;
+                          showDialog(
+                            context: localContext,
+                            barrierDismissible: false,
+                            builder: (context) => const Center(child: CircularProgressIndicator()),
+                          );
+
+                          final effect = await PokemonService.getAbilityEffect(ability);
+
+                          if (!mounted) return;
+                          Navigator.of(localContext).pop();
+
+                          showDialog(
+                            context: localContext,
+                            builder: (c) => AlertDialog(
+                              title: Text(ability.replaceAll('-', ' ').toUpperCase()),
+                              content: SingleChildScrollView(child: Text(effect ?? 'Descrição não disponível.')),
+                              actions: [
+                                TextButton(onPressed: () => Navigator.of(localContext).pop(), child: const Text('Fechar')),
+                              ],
+                            ),
+                          );
+                        },
                       );
                     }).toList(),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
 
-                  // Informações Adicionais
+                  // Movimentos
                   const Text(
-                    'Informações Adicionais',
+                    'Movimentos',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 12),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text(
-                                'Experiência Base:',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              Text(
-                                '${currentPokemon.baseExperience} XP',
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
+                  Builder(builder: (context) {
+                    final moves = currentPokemon.moves;
+                    final displayedMoves = _showAllMoves ? moves : moves.take(_movesPreviewLimit).toList();
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Wrap(
+                          spacing: 8,
+                          children: displayedMoves.map((move) {
+                            return Chip(
+                              label: Text(move.replaceAll('-', ' ').toUpperCase()),
+                              backgroundColor: Colors.grey[100],
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            );
+                          }).toList(),
+                        ),
+                        if (moves.length > _movesPreviewLimit) ...[
+                          const SizedBox(height: 8),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: TextButton(
+                              onPressed: () {
+                                setState(() {
+                                  _showAllMoves = !_showAllMoves;
+                                });
+                              },
+                              child: Text(_showAllMoves
+                                  ? 'Mostrar menos'
+                                  : 'Mostrar todos (${moves.length})'),
+                            ),
                           ),
-                          if (speciesInfo != null) ...[
-                            const Divider(height: 24),
-                            _buildInfoRow('Taxa de Captura:', '${speciesInfo!['capture_rate']}/255'),
-                            const SizedBox(height: 8),
-                            _buildInfoRow('Felicidade Base:', '${speciesInfo!['base_happiness']}/255'),
-                            const SizedBox(height: 8),
-                            _buildInfoRow('Crescimento:', _formatGrowthRate(speciesInfo!['growth_rate'])),
-                            const SizedBox(height: 8),
-                            _buildInfoRow('Habitat:', _capitalizeFirst(speciesInfo!['habitat'])),
-                            const SizedBox(height: 8),
-                            _buildInfoRow('Gênero:', speciesInfo!['gender_rate']),
-                            const SizedBox(height: 8),
-                            _buildInfoRow('Geração:', _capitalizeFirst(speciesInfo!['generation']).replaceAll('-', ' ')),
-                            if (speciesInfo!['is_legendary'] == true || speciesInfo!['is_mythical'] == true) ...[
-                              const SizedBox(height: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                                decoration: BoxDecoration(
-                                  color: Colors.amber.withOpacity(0.2),
-                                  border: Border.all(color: Colors.amber),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const Icon(Icons.star, color: Colors.amber, size: 20),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      speciesInfo!['is_legendary'] == true ? 'LENDÁRIO' : 'MÍTICO',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.amber,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                            if (speciesInfo!['description'] != null && speciesInfo!['description'].toString().isNotEmpty) ...[
-                              const Divider(height: 24),
-                              const Text(
-                                'Descrição:',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                speciesInfo!['description'],
-                                style: const TextStyle(fontSize: 14),
-                                textAlign: TextAlign.justify,
-                              ),
-                            ],
-                          ],
                         ],
-                      ),
-                    ),
-                  ),
+                      ],
+                    );
+                  }),
                   
                   // Evoluções
                   if (evolutions.isNotEmpty) ...[
