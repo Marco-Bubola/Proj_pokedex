@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/pokemon.dart';
 
@@ -40,7 +41,8 @@ class PokemonService {
         List<PokemonEvolution> evolutions = [];
         
         if (includeEvolutions) {
-          evolutions = await getEvolutionChain(data['id']);
+            evolutions = await getEvolutionChain(data['id']);
+            debugPrint('DEBUG getPokemonByUrl: evolutions returned count=${evolutions.length} names=${evolutions.map((e) => e.name).toList()}');
         }
         
         return Pokemon.fromJson(data, evolutions: evolutions);
@@ -62,7 +64,8 @@ class PokemonService {
         List<PokemonEvolution> evolutions = [];
         
         if (includeEvolutions) {
-          evolutions = await getEvolutionChain(id);
+            evolutions = await getEvolutionChain(id);
+            debugPrint('DEBUG getPokemonById: evolutions returned count=${evolutions.length} names=${evolutions.map((e) => e.name).toList()}');
         }
         
         return Pokemon.fromJson(data, evolutions: evolutions);
@@ -80,18 +83,25 @@ class PokemonService {
         Uri.parse('$baseUrl/pokemon-species/$pokemonId'),
       );
 
+      debugPrint('DEBUG getEvolutionChain: pokemonId=$pokemonId status=${speciesResponse.statusCode}');
       if (speciesResponse.statusCode != 200) return [];
 
       final speciesData = json.decode(speciesResponse.body);
       final evolutionChainUrl = speciesData['evolution_chain']['url'];
+      debugPrint('DEBUG evolutionChainUrl=$evolutionChainUrl');
 
       // Buscar evolution chain
       final evolutionResponse = await http.get(Uri.parse(evolutionChainUrl));
       
+      debugPrint('DEBUG evolutionResponse status=${evolutionResponse.statusCode}');
       if (evolutionResponse.statusCode != 200) return [];
 
       final evolutionData = json.decode(evolutionResponse.body);
-      return _parseEvolutionChain(evolutionData['chain']);
+      debugPrint('DEBUG evolutionChain root=${evolutionData['chain']?['species']?['name']}');
+      final parsed = _parseEvolutionChain(evolutionData['chain']);
+      debugPrint('DEBUG parsed evolutions count=${parsed.length}');
+      debugPrint('DEBUG parsed evolutions names=${parsed.map((e) => e.name).toList()}');
+      return parsed;
     } catch (e) {
       return [];
     }
@@ -99,38 +109,46 @@ class PokemonService {
 
   static List<PokemonEvolution> _parseEvolutionChain(Map<String, dynamic> chain) {
     List<PokemonEvolution> evolutions = [];
-    
-    void parseChain(Map<String, dynamic> currentChain) {
-      if (currentChain['evolves_to'] != null && currentChain['evolves_to'].isNotEmpty) {
-        for (var evolution in currentChain['evolves_to']) {
-          final pokemonName = evolution['species']['name'];
-          final pokemonUrl = evolution['species']['url'];
-          final pokemonId = int.parse(pokemonUrl.split('/').where((s) => s.isNotEmpty).last);
-          
-          String? trigger;
-          int? minLevel;
-          
-          if (evolution['evolution_details'] != null && evolution['evolution_details'].isNotEmpty) {
-            final details = evolution['evolution_details'][0];
-            trigger = details['trigger']['name'];
-            minLevel = details['min_level'];
+
+    void parseNode(Map<String, dynamic> node, {String? trigger, int? minLevel}) {
+      try {
+        debugPrint('DEBUG parseNode: species=${node['species']?['name']}');
+        final species = node['species'];
+        final pokemonName = species['name'];
+        final pokemonUrl = species['url'];
+        // Extrair id da URL, usando o penúltimo segmento para evitar problemas com barras finais
+        final parts = pokemonUrl.split('/');
+        final idSegment = parts.length >= 2 ? parts[parts.length - 2] : parts.last;
+        final pokemonId = int.parse(idSegment);
+
+        evolutions.add(PokemonEvolution(
+          id: pokemonId,
+          name: pokemonName,
+          imageUrl: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/$pokemonId.png',
+          evolutionTrigger: trigger,
+          minLevel: minLevel,
+        ));
+        debugPrint('DEBUG parseNode: added id=$pokemonId name=$pokemonName');
+
+        if (node['evolves_to'] != null && node['evolves_to'].isNotEmpty) {
+          for (var evo in node['evolves_to']) {
+            String? nextTrigger;
+            int? nextMinLevel;
+            if (evo['evolution_details'] != null && evo['evolution_details'].isNotEmpty) {
+              final details = evo['evolution_details'][0];
+              nextTrigger = details['trigger']?['name'];
+              nextMinLevel = details['min_level'];
+            }
+            parseNode(evo, trigger: nextTrigger, minLevel: nextMinLevel);
           }
-
-          evolutions.add(PokemonEvolution(
-            id: pokemonId,
-            name: pokemonName,
-            imageUrl: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/$pokemonId.png',
-            evolutionTrigger: trigger,
-            minLevel: minLevel,
-          ));
-
-          // Recursão para evoluções em cadeia
-          parseChain(evolution);
         }
+      } catch (e, st) {
+        debugPrint('ERROR parseNode exception: $e');
+        debugPrint('$st');
       }
     }
 
-    parseChain(chain);
+    parseNode(chain);
     return evolutions;
   }
 
@@ -143,12 +161,20 @@ class PokemonService {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         
-        // Buscar descrição em português ou inglês
+        // Buscar descrição: preferir Português (pt) e usar Inglês (en) como fallback
         String description = '';
         for (var entry in data['flavor_text_entries']) {
-          if (entry['language']['name'] == 'en') {
+          if (entry['language'] != null && entry['language']['name'] == 'pt') {
             description = entry['flavor_text'].toString().replaceAll('\n', ' ').replaceAll('\f', ' ');
             break;
+          }
+        }
+        if (description.isEmpty) {
+          for (var entry in data['flavor_text_entries']) {
+            if (entry['language'] != null && entry['language']['name'] == 'en') {
+              description = entry['flavor_text'].toString().replaceAll('\n', ' ').replaceAll('\f', ' ');
+              break;
+            }
           }
         }
 
@@ -183,4 +209,42 @@ class PokemonService {
       return null;
     }
   }
+
+    static Future<String?> getAbilityEffect(String abilityName) async {
+      try {
+        final response = await http.get(Uri.parse('$baseUrl/ability/$abilityName'));
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          // Buscar descrição: preferir Português (pt), fallback Inglês (en)
+          String? effect;
+          for (var entry in data['effect_entries']) {
+            if (entry['language'] != null && entry['language']['name'] == 'pt') {
+              effect = entry['effect'].toString().replaceAll('\n', ' ').replaceAll('\f', ' ');
+              break;
+            }
+          }
+          if (effect == null) {
+            for (var entry in data['effect_entries']) {
+              if (entry['language'] != null && entry['language']['name'] == 'en') {
+                effect = entry['effect'].toString().replaceAll('\n', ' ').replaceAll('\f', ' ');
+                break;
+              }
+            }
+          }
+          if (effect == null) {
+            // fallback para short_effect
+            for (var entry in data['effect_entries']) {
+              if (entry['language'] != null && entry['language']['name'] == 'en') {
+                effect = entry['short_effect']?.toString();
+                break;
+              }
+            }
+          }
+          return effect;
+        }
+        return null;
+      } catch (e) {
+        return null;
+      }
+    }
 }
