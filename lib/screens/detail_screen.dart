@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../models/pokemon.dart';
 import '../services/pokemon_service.dart';
@@ -16,6 +17,7 @@ class _DetailScreenState extends State<DetailScreen> {
   List<PokemonEvolution> evolutions = [];
   Map<String, dynamic>? speciesInfo;
   bool isLoadingEvolutions = true;
+  bool _isShiny = false;
   bool _showAllMoves = false;
   final int _movesPreviewLimit = 20;
 
@@ -156,6 +158,9 @@ class _DetailScreenState extends State<DetailScreen> {
   @override
   Widget build(BuildContext context) {
     final primaryColor = getTypeColor(currentPokemon.types.first);
+    final displayImageUrl = (_isShiny && currentPokemon.imageShinyUrl.isNotEmpty)
+      ? currentPokemon.imageShinyUrl
+      : currentPokemon.imageUrl;
 
     return Scaffold(
       body: CustomScrollView(
@@ -227,19 +232,71 @@ class _DetailScreenState extends State<DetailScreen> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 const SizedBox(height: 24),
-                                currentPokemon.imageUrl.isNotEmpty
-                                    ? Image.network(
-                                        currentPokemon.imageUrl,
-                                        height: 200,
-                                        fit: BoxFit.contain,
-                                        errorBuilder: (context, error, stackTrace) {
-                                          return Icon(
-                                            Icons.catching_pokemon,
-                                            size: 120,
-                                            color: Colors.white.withAlpha((0.8 * 255).round()),
-                                          );
-                                        },
-                                      )
+                                displayImageUrl.isNotEmpty
+                                    ? LayoutBuilder(builder: (ctx, imgConstraints) {
+                                        // calcula altura máxima disponível para a imagem (evita overflow)
+                                        final maxImgHeight = math.max(80.0, imgConstraints.maxHeight * 0.6);
+                                        final imgHeight = math.min(200.0, maxImgHeight);
+                                        return SizedBox(
+                                          height: imgHeight + 8, // espaço para badge
+                                          child: Stack(
+                                            alignment: Alignment.center,
+                                            children: [
+                                              Positioned.fill(
+                                                child: Align(
+                                                  alignment: Alignment.center,
+                                                  child: Image.network(
+                                                    displayImageUrl,
+                                                    height: imgHeight,
+                                                    fit: BoxFit.contain,
+                                                    errorBuilder: (context, error, stackTrace) {
+                                                      return Icon(
+                                                        Icons.catching_pokemon,
+                                                        size: 120,
+                                                        color: Colors.white.withAlpha((0.8 * 255).round()),
+                                                      );
+                                                    },
+                                                  ),
+                                                ),
+                                              ),
+                                              // botão de shiny posicionado sobre a imagem (não aumenta altura)
+                                              Positioned(
+                                                right: 8,
+                                                bottom: 8,
+                                                child: Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    IconButton(
+                                                      tooltip: _isShiny ? 'Desativar Shiny' : 'Ativar Shiny',
+                                                      icon: Icon(Icons.auto_awesome, color: _isShiny ? Colors.yellowAccent : Colors.white),
+                                                      onPressed: () {
+                                                        if (currentPokemon.imageShinyUrl.isEmpty) {
+                                                          ScaffoldMessenger.of(context).showSnackBar(
+                                                            const SnackBar(content: Text('Shiny não disponível para este Pokémon.')),
+                                                          );
+                                                          return;
+                                                        }
+                                                        setState(() {
+                                                          _isShiny = !_isShiny;
+                                                        });
+                                                      },
+                                                    ),
+                                                    if (_isShiny)
+                                                      Container(
+                                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                        decoration: BoxDecoration(
+                                                          color: Colors.white.withAlpha((0.15 * 255).round()),
+                                                          borderRadius: BorderRadius.circular(8),
+                                                        ),
+                                                        child: const Text('SHINY', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                                      ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      })
                                     : Icon(
                                         Icons.catching_pokemon,
                                         size: 120,
@@ -327,19 +384,69 @@ class _DetailScreenState extends State<DetailScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         const SizedBox(height: 24),
-                        currentPokemon.imageUrl.isNotEmpty
-                            ? Image.network(
-                                currentPokemon.imageUrl,
-                                height: 180,
-                                fit: BoxFit.contain,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Icon(
-                                    Icons.catching_pokemon,
-                                    size: 120,
-                                    color: Colors.white.withAlpha((0.8 * 255).round()),
-                                  );
-                                },
-                              )
+                        displayImageUrl.isNotEmpty
+                            ? LayoutBuilder(builder: (ctx, imgConstraints) {
+                                final maxImgHeight = math.max(64.0, imgConstraints.maxHeight * 0.6);
+                                final imgHeight = math.min(160.0, maxImgHeight);
+                                return SizedBox(
+                                  height: imgHeight + 8,
+                                  child: Stack(
+                                    alignment: Alignment.center,
+                                    children: [
+                                      Positioned.fill(
+                                        child: Align(
+                                          alignment: Alignment.center,
+                                          child: Image.network(
+                                            displayImageUrl,
+                                            height: imgHeight,
+                                            fit: BoxFit.contain,
+                                            errorBuilder: (context, error, stackTrace) {
+                                              return Icon(
+                                                Icons.catching_pokemon,
+                                                size: 120,
+                                                color: Colors.white.withAlpha((0.8 * 255).round()),
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                      ),
+                                      Positioned(
+                                        right: 4,
+                                        bottom: 4,
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            IconButton(
+                                              tooltip: _isShiny ? 'Desativar Shiny' : 'Ativar Shiny',
+                                              icon: Icon(Icons.auto_awesome, color: _isShiny ? Colors.yellowAccent : Colors.white),
+                                              onPressed: () {
+                                                if (currentPokemon.imageShinyUrl.isEmpty) {
+                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                    const SnackBar(content: Text('Shiny não disponível para este Pokémon.')),
+                                                  );
+                                                  return;
+                                                }
+                                                setState(() {
+                                                  _isShiny = !_isShiny;
+                                                });
+                                              },
+                                            ),
+                                            if (_isShiny)
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.white.withAlpha((0.15 * 255).round()),
+                                                  borderRadius: BorderRadius.circular(8),
+                                                ),
+                                                child: const Text('SHINY', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              })
                             : Icon(
                                 Icons.catching_pokemon,
                                 size: 120,
