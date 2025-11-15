@@ -2,6 +2,7 @@ class Pokemon {
   final int id;
   final String name;
   final String imageUrl;
+  final String imageShinyUrl;
   final List<String> types;
   final int height;
   final int weight;
@@ -18,6 +19,7 @@ class Pokemon {
     required this.id,
     required this.name,
     required this.imageUrl,
+    required this.imageShinyUrl,
     required this.types,
     required this.height,
     required this.weight,
@@ -57,6 +59,8 @@ class Pokemon {
       name: json['name'],
       imageUrl: json['sprites']['other']['official-artwork']['front_default'] ?? 
                 json['sprites']['front_default'] ?? '',
+      imageShinyUrl: json['sprites']['other']['official-artwork']['front_shiny'] ??
+                json['sprites']['front_shiny'] ?? '',
       types: typesList,
       height: json['height'],
       weight: json['weight'],
