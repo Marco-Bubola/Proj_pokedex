@@ -7,6 +7,7 @@ class Pokemon {
   final int weight;
   final List<PokemonStat> stats;
   final List<String> abilities;
+  final List<String> moves;
   final String? species;
   final String? habitat;
   final String? color;
@@ -22,6 +23,7 @@ class Pokemon {
     required this.weight,
     required this.stats,
     required this.abilities,
+    required this.moves,
     this.species,
     this.habitat,
     this.color,
@@ -45,6 +47,11 @@ class Pokemon {
       abilitiesList.add(ability['ability']['name']);
     }
 
+    final List<String> movesList = [];
+    for (var m in json['moves']) {
+      movesList.add(m['move']['name']);
+    }
+
     return Pokemon(
       id: json['id'],
       name: json['name'],
@@ -55,6 +62,7 @@ class Pokemon {
       weight: json['weight'],
       stats: statsList,
       abilities: abilitiesList,
+      moves: movesList,
       baseExperience: json['base_experience'] ?? 0,
       evolutions: evolutions ?? [],
     );
